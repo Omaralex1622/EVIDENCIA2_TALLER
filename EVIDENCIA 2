@@ -1,1 +1,140 @@
+import datetime
+import re
+import os
+import pandas as pd
+
+Nota_registrada = {}
+
+
+def validar_fecha(fecha):
+    try:
+        fecha_ingresada = datetime.datetime.strptime(fecha, "%d-%m-%y")
+        fecha_actual = datetime.datetime.now()
+        return fecha_ingresada <= fecha_actual
+    except ValueError:
+        return False
+
+
+def validar_rfc(rfc):
+    
+    rfc_pattern = re.compile(r'^[A-Z]{4}\d{6}[A-Z0-9]{3}$')
+    return rfc_pattern.match(rfc) is not None
+
+
+def validar_correo(correo):
+   
+    correo_pattern = re.compile(r'^[\w\.-]+@[\w\.-]+$')
+    return correo_pattern.match(correo) is not None
+
+
+def agregar_servicio():
+    servicio = {}
+    
+    while True:
+        nombre_servicio = input("Ingrese el nombre del servicio realizado (o 'cancelar' para salir): ").strip()
+        if nombre_servicio.lower() == 'cancelar':
+            return None
+        
+        if nombre_servicio:
+            break
+        else:
+            print("Por favor, ingrese un nombre de servicio válido.")
+
+    while True:
+        try:
+            costo_servicio = float(input("Ingrese el costo del servicio realizado (mayor que 0): "))
+            if costo_servicio <= 0:
+                print("El costo debe ser mayor que cero.")
+            else:
+                costo_servicio_str = "{:.2f}".format(costo_servicio)  
+                servicio['Nombre'] = nombre_servicio
+                servicio['Costo'] = costo_servicio_str
+                break
+        except ValueError:
+            print("Ingrese un costo válido (número mayor que cero).")
+
+    return servicio
+
+
+def crear_nota():
+    while True:
+        cliente = input("Ingrese el nombre del cliente (o 'salir' para terminar): ").strip()
+        if cliente.lower() == 'salir':
+            break
+
+        while True:
+            fecha_ingresada = input("Ingrese la fecha (DD-MM-YYYY): ").strip()
+            fecha_actual = datetime.datetime.now()
+            fecha_formato_correcto = re.match(r'^\d{2}-\d{2}-\d{4}$', fecha_ingresada)
+
+            if not fecha_formato_correcto:
+                print("El formato de fecha ingresado es incorrecto. Utilice DD-MM-YYYY.")
+            else:
+                fecha_ingresada = datetime.datetime.strptime(fecha_ingresada, "%d-%m-%Y")
+                if fecha_ingresada > fecha_actual:
+                    print("La fecha no puede ser posterior a la fecha actual.")
+                else:
+                    break
+
+        while True:
+            rfc = input("Ingrese el RFC (Formato válido, ej. ABCD123456XYZ): ").strip()
+            if validar_rfc(rfc):
+                break
+            else:
+                print("RFC inválido. Por favor, ingrese un RFC válido.")
+
+        while True:
+            correo = input("Ingrese el correo electrónico (Formato válido, ej. ejemplo@dominio.com): ").strip()
+            if validar_correo(correo):
+                break
+            else:
+                print("Correo electrónico inválido. Por favor, ingrese un correo válido.")
+
+        nota = []
+        while True:
+            servicio = agregar_servicio()
+            if servicio is None:
+                break
+            nota.append(servicio)
+
+        if nota:  
+            total = sum(float(servicio['Costo']) for servicio in nota)
+                           
+            print("\nResumen de la nota:")
+            print(f"Cliente: {cliente}")
+            print(f"Fecha: {fecha_ingresada}")
+            print(f"RFC: {rfc}")
+            print(f"Correo Electrónico: {correo}")
+            print("Servicios realizados:")
+            for servicio in nota:
+                print(f"- {servicio['Nombre']}: ${servicio['Costo']}")
+            print(f"Monto Total: ${total:.2f}\n")
+            
+            
+            folio = datetime.datetime.now().strftime("%d%m%y%H%M%S")
+            
+            Nota_registrada[folio] = {
+                'Fecha': fecha_ingresada,
+                'Cliente': cliente,
+                'RFC': rfc,
+                'Correo Electrónico': correo,
+                'Servicios': nota,
+                'Monto Total': total,
+                'Cancelada': False
+            }
+        else:
+            print("La nota debe contener al menos un servicio. Por favor, vuelva a ingresar la nota.")
+
+
+def consulta_por_periodo():
+    fecha_inicial = input("Ingrese la fecha inicial (DD-MM-YYYY) o deje en blanco para usar la fecha actual: ").strip()
+    if not fecha_inicial:
+        fecha_inicial = datetime.datetime.now().strftime("%d-%m-%y")
+
+    while True:
+        fecha_final = input("Ingrese la fecha final (DD-MM-YYYY): ").strip()
+        if not validar_fecha(fecha_final):
+            print("La fecha final debe ser igual o posterior a la fecha inicial.")
+        else:
+            break
 
