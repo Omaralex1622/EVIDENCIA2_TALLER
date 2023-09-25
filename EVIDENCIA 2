@@ -281,4 +281,168 @@ def recuperar_nota():
             print(f"{nota['Fecha']}\t{nota['Cliente']}\t{nota['RFC']}")
 
         folio_recuperar = input("Ingrese el folio de la nota que desea recuperar o '0' para salir: ").strip()
+folio_recuperar = input("Ingrese el folio de la nota que desea recuperar o '0' para salir: ").strip()
+
+        if folio_recuperar == '0':
+            return
+
+        nota = next((nota for nota in notas_canceladas if nota['Folio'] == folio_recuperar), None)
+
+        if nota:
+            print("\nDetalles de la nota cancelada:")
+            print(f"Folio: {nota['Fecha']}_{nota['RFC']}")
+            print(f"Fecha: {nota['Fecha']}")
+            print(f"Cliente: {nota['Cliente']}")
+            print(f"RFC: {nota['RFC']}")
+            print(f"Correo Electrónico: {nota['Correo Electrónico']}")
+            print("Servicios realizados:")
+            for servicio in nota['Servicios']:
+                print(f"- {servicio['Nombre']}: ${servicio['Costo']}")
+            print(f"Monto Total: ${nota['Monto Total']:.2f}\n")
+
+            confirmacion = input(f"¿Deseas recuperar la nota {folio_recuperar}? (s/n): ").strip().lower()
+            if confirmacion == 's':
+                nota['Cancelada'] = False
+                print(f"La nota {folio_recuperar} ha sido recuperada.")
+            else:
+                print(f"La nota {folio_recuperar} no fue recuperada.")
+        else:
+            print(f"La nota con folio {folio_recuperar} no existe en el sistema o no está cancelada.")
+
+# Función para guardar el estado de la aplicación en un archivo CSV
+def guardar_estado_csv():
+    try:
+        with open(archivo_estado, 'w') as archivo:
+            archivo.write("Folio,Fecha,Cliente,RFC,Correo Electrónico,Servicios,Monto Total,Cancelada\n")
+
+            for folio, detalles in Nota_registrada.items():
+                fecha = detalles['Fecha']
+                cliente = detalles['Cliente']
+                rfc = detalles['RFC']
+                correo = detalles['Correo Electrónico']
+                servicios = "|".join([f"{servicio['Nombre']}:{servicio['Costo']}" for servicio in detalles['Servicios']])
+                monto_total = detalles['Monto Total']
+                cancelada = detalles['Cancelada']
+
+                linea = f"{folio},{fecha},{cliente},{rfc},{correo},{servicios},{monto_total},{cancelada}\n"
+                archivo.write(linea)
+
+        print("Estado de la aplicación guardado exitosamente en archivo CSV.")
+    except Exception as e:
+        print(f"Error al guardar el estado de la aplicación: {str(e)}")
+
+# Función para cargar el estado de la aplicación desde un archivo CSV
+def cargar_estado_csv():
+    try:
+        if os.path.exists(archivo_estado):
+            with open(archivo_estado, 'r') as archivo:
+                lineas = archivo.readlines()
+
+                for linea in lineas[1:]:  # Saltar la primera línea de encabezados
+                    campos = linea.strip().split(',')
+                    folio, fecha, cliente, rfc, correo, servicios_str, monto_total, cancelada_str = campos
+
+                    servicios = []
+                    servicios_campos = servicios_str.split('|')
+                    for servicio_campo in servicios_campos:
+                        nombre, costo = servicio_campo.split(':')
+                        servicios.append({'Nombre': nombre, 'Costo': costo})
+
+                    monto_total = float(monto_total)
+                    cancelada = (cancelada_str.lower() == 'true')
+
+                    Nota_registrada[folio] = {
+                        'Fecha': fecha,
+                        'Cliente': cliente,
+                        'RFC': rfc,
+                        'Correo Electrónico': correo,
+                        'Servicios': servicios,
+                        'Monto Total': monto_total,
+                        'Cancelada': cancelada
+                    }
+
+            print("Estado de la aplicación cargado exitosamente desde archivo CSV.")
+        else:
+            print("No se encontró un archivo de estado anterior. Iniciando con un estado vacío.")
+    except Exception as e:
+        print(f"Error al cargar el estado de la aplicación desde archivo CSV: {str(e)}")
+
+# Función principal
+def main():
+    cargar_estado_csv()  # Cargar estado de la aplicación desde archivo CSV (si existe)
+
+    while True:
+        print("\nMenú Principal:")
+        print("1. Crear una nota")
+        print("2. Consultas y Reportes")
+        print("3. Recuperar una nota cancelada")
+        print("4. Cancelar una nota")
+        print("5. Mostrar notas canceladas")
+        print("6. Salir del sistema")
+        opcion = input("Seleccione una opción (1/2/3/4/5/6): ").strip()
+
+        if opcion == '1':
+            # Crear una nota
+            crear_nota()
+
+        elif opcion == '2':
+            # Consultas y Reportes
+            while True:
+                print("\nConsultas y Reportes:")
+                print("1. Consulta por periodo")
+                print("2. Consulta por folio")
+                print("3. Consulta por cliente")
+                print("4. Volver al Menú Principal")
+                consulta = input("Seleccione una opción (1/2/3/4): ").strip()
+
+                if consulta == '1':
+                    # Consulta por periodo
+                    consulta_por_periodo()
+
+                elif consulta == '2':
+                    # Consulta por folio
+                    consulta_por_folio()
+
+                elif consulta == '3':
+                    # Consulta por cliente
+                    consulta_por_cliente()
+
+                elif consulta == '4':
+                    break
+
+                else:
+                    print("Opción inválida")
+
+        elif opcion == '3':
+            # Recuperar una nota cancelada
+            recuperar_nota()
+
+        elif opcion == '4':
+            # Cancelar una nota
+            cancelar_nota()
+
+        elif opcion == '5':
+            # Mostrar notas canceladas
+            notas_canceladas = [folio for folio, detalles in Nota_registrada.items() if detalles['Cancelada']]
+
+            if not notas_canceladas:
+                print("No hay notas canceladas en el sistema.")
+            else:
+                print("\nNotas Canceladas:")
+                for folio_cancelada in notas_canceladas:
+                    print(f"Folio: {folio_cancelada}")
+
+        elif opcion == '6':
+            confirmacion_salir = input("¿Está seguro que desea salir del sistema? (s/n): ").strip().lower()
+            if confirmacion_salir == 's':
+                guardar_estado_csv()  # Guardar estado de la aplicación en archivo CSV
+                print("Saliendo del sistema")
+                break
+        else:
+            print("Opción inválida, inténtalo de nuevo")
+
+if __name__ == "__main__":
+    main()
+
+
 
