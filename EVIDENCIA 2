@@ -137,4 +137,148 @@ def consulta_por_periodo():
             print("La fecha final debe ser igual o posterior a la fecha inicial.")
         else:
             break
+ notas_en_periodo = []
+    total_montos = 0
+    cantidad_notas = 0
+
+    for folio, detalles in Nota_registrada.items():
+        fecha_nota = detalles['Fecha']
+        if fecha_inicial <= fecha_nota <= fecha_final:
+            notas_en_periodo.append((folio, fecha_nota))
+            total_montos += detalles['Monto Total']
+            cantidad_notas += 1
+
+    if notas_en_periodo:
+        print("\nNotas en el período seleccionado:")
+        print("Folio\tFecha")
+        for folio, fecha_nota in notas_en_periodo:
+            print(f"{folio}\t{fecha_nota}")
+
+        monto_promedio = total_montos / cantidad_notas
+        print(f"\nMonto Promedio de las Notas del Periodo: ${monto_promedio:.2f}")
+    else:
+        print("No hay notas emitidas para el período seleccionado.")
+
+
+def consulta_por_folio():
+    folio_consulta = input("Ingresa el folio de la nota a consultar: ").strip()
+
+    nota = Nota_registrada.get(folio_consulta)
+
+    if nota:
+        if not nota['Cancelada']:
+            print("\nDetalles de la nota:")
+            print(f"Folio: {folio_consulta}")
+            print(f"Fecha: {nota['Fecha']}")
+            print(f"Cliente: {nota['Cliente']}")
+            print(f"RFC: {nota['RFC']}")
+            print(f"Correo Electrónico: {nota['Correo Electrónico']}")
+            print("Servicios realizados:")
+            for servicio in nota['Servicios']:
+                print(f"- {servicio['Nombre']}: ${servicio['Costo']}")
+            print(f"Monto Total: ${nota['Monto Total']:.2f}")
+        else:
+            print(f"La nota {folio_consulta} corresponde a una nota cancelada.")
+    else:
+        print(f"La nota con folio {folio_consulta} no existe en el sistema.")
+
+
+def consulta_por_cliente():
+    rfc_to_folio = {}  
+    consecutivo = 1  
+
+    for folio, detalles in Nota_registrada.items():
+        rfc = detalles['RFC']
+        if rfc not in rfc_to_folio:
+            rfc_to_folio[rfc] = consecutivo
+            consecutivo += 1
+
+    while True:
+        print("\nListado de RFCs:")
+        for rfc, folio in rfc_to_folio.items():
+            print(f"{folio}. {rfc}")
+
+        seleccion = input("Seleccione el folio correspondiente al RFC a consultar o 'salir' para volver al menú: ").strip()
+
+        if seleccion.lower() == 'salir':
+            break
+
+        try:
+            seleccion = int(seleccion)
+            rfc = None
+
+            for rfc_actual, folio in rfc_to_folio.items():
+                if folio == seleccion:
+                    rfc = rfc_actual
+                    break
+
+            if rfc:
+                print("\nNotas para el RFC seleccionado:")
+                notas_cliente = [nota for nota in Nota_registrada.values() if nota['RFC'] == rfc]
+
+                total_montos = 0
+                cantidad_notas = len(notas_cliente)
+
+                for nota in notas_cliente:
+                    fecha = nota['Fecha']  
+
+                    print("\nDetalles de la nota:")
+                    print(f"Folio: {fecha}_{rfc}")
+                    print(f"Fecha: {fecha}")
+                    
+
+                    total_montos += nota['Monto Total']
+
+                monto_promedio = total_montos / cantidad_notas
+                print(f"Monto Promedio de las Notas del Cliente: ${monto_promedio:.2f}")
+                
+            else:
+                print("Folio no válido. Seleccione un folio de la lista.")
+        except ValueError:
+            print("Entrada no válida. Seleccione un folio de la lista o 'salir' para volver al menú.")
+
+
+
+def cancelar_nota():
+    folio_cancelar = input("Ingrese el folio de la nota a cancelar: ").strip()
+
+    nota = Nota_registrada.get(folio_cancelar)
+
+    if nota:
+        if not nota['Cancelada']:
+            print("\nDetalles de la nota:")
+            print(f"Folio: {folio_cancelar}")
+            print(f"Fecha: {nota['Fecha']}")
+            print(f"Cliente: {nota['Cliente']}")
+            print(f"RFC: {nota['RFC']}")
+            print(f"Correo Electrónico: {nota['Correo Electrónico']}")
+            print("Servicios realizados:")
+            for servicio in nota['Servicios']:
+                print(f"- {servicio['Nombre']}: ${servicio['Costo']}")
+            print(f"Monto Total: ${nota['Monto Total']:.2f}\n")
+
+            confirmacion = input(f"¿Deseas cancelar la nota {folio_cancelar}? (s/n): ").strip().lower()
+            if confirmacion == 's':
+                nota['Cancelada'] = True
+                print(f"La nota {folio_cancelar} ha sido cancelada.")
+            else:
+                print(f"La nota {folio_cancelar} no fue cancelada.")
+        else:
+            print(f"La nota con folio {folio_cancelar} corresponde a una nota cancelada.")
+    else:
+        print(f"La nota con folio {folio_cancelar} no existe en el sistema o corresponde a una nota cancelada.")
+
+
+def recuperar_nota():
+    notas_canceladas = [nota for nota in Nota_registrada.values() if nota['Cancelada']]
+
+    if not notas_canceladas:
+        print("No hay notas canceladas en el sistema.")
+    else:
+        print("\nNotas Canceladas:")
+        print("Folio\tFecha\tCliente\tRFC")
+        for nota in notas_canceladas:
+            print(f"{nota['Fecha']}\t{nota['Cliente']}\t{nota['RFC']}")
+
+        folio_recuperar = input("Ingrese el folio de la nota que desea recuperar o '0' para salir: ").strip()
 
